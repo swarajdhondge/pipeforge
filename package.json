@@ -1,0 +1,12 @@
+{
+  "name": "yahoo-resurect",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "powershell -File ./start-dev.ps1",
+    "install:all": "npm install --workspaces"
+  }
+}
