@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Run E2E Canvas Tests",
+  "description": "Run end-to-end tests for Yahoo Pipes Canvas feature",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd backend && npx tsx src/scripts/test-yahoo-pipes-canvas-e2e.ts"
+  }
+}

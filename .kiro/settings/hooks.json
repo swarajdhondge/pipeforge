@@ -1,0 +1,124 @@
+{
+  "hooks": [
+    {
+      "id": "run-all-tests",
+      "name": "Run All Tests",
+      "description": "Run all unit tests for backend and frontend (566 total tests)",
+      "trigger": "manual",
+      "commands": [
+        {
+          "label": "Backend Tests (518 tests)",
+          "command": "cd backend && npm test"
+        },
+        {
+          "label": "Frontend Tests (48 tests)",
+          "command": "cd frontend && npm test"
+        }
+      ]
+    },
+    {
+      "id": "test-and-build",
+      "name": "Test & Build All",
+      "description": "Complete validation: run all tests and build both backend and frontend",
+      "trigger": "manual",
+      "commands": [
+        {
+          "label": "Backend Tests",
+          "command": "cd backend && npm test"
+        },
+        {
+          "label": "Frontend Tests",
+          "command": "cd frontend && npm test"
+        },
+        {
+          "label": "Backend Build",
+          "command": "cd backend && npm run build"
+        },
+        {
+          "label": "Frontend Build",
+          "command": "cd frontend && npm run build"
+        }
+      ]
+    },
+    {
+      "id": "pre-commit-check",
+      "name": "Pre-Commit Check",
+      "description": "Quick validation before committing: tests + TypeScript type checking",
+      "trigger": "manual",
+      "commands": [
+        {
+          "label": "Backend Tests",
+          "command": "cd backend && npm test"
+        },
+        {
+          "label": "Frontend Tests",
+          "command": "cd frontend && npm test"
+        },
+        {
+          "label": "Backend TypeScript Check",
+          "command": "cd backend && npx tsc --noEmit"
+        },
+        {
+          "label": "Frontend TypeScript Check",
+          "command": "cd frontend && npx tsc --noEmit"
+        }
+      ]
+    },
+    {
+      "id": "pre-deployment-check",
+      "name": "Pre-Deployment Check",
+      "description": "Comprehensive API endpoint testing (53 endpoint tests)",
+      "trigger": "manual",
+      "commands": [
+        {
+          "label": "Pre-Deployment Tests",
+          "command": "cd backend && powershell -ExecutionPolicy Bypass -File pre-deployment-tests.ps1"
+        }
+      ]
+    },
+    {
+      "id": "e2e-tests",
+      "name": "Run E2E Tests",
+      "description": "End-to-end tests for Yahoo Pipes Canvas feature (20 tests)",
+      "trigger": "manual",
+      "commands": [
+        {
+          "label": "Yahoo Pipes Canvas E2E Tests",
+          "command": "cd backend && npx tsx src/scripts/test-yahoo-pipes-canvas-e2e.ts"
+        }
+      ]
+    },
+    {
+      "id": "full-validation",
+      "name": "Full Validation Suite",
+      "description": "Complete validation: unit tests + E2E tests + pre-deployment checks + builds",
+      "trigger": "manual",
+      "commands": [
+        {
+          "label": "Backend Unit Tests",
+          "command": "cd backend && npm test"
+        },
+        {
+          "label": "Frontend Unit Tests",
+          "command": "cd frontend && npm test"
+        },
+        {
+          "label": "E2E Tests",
+          "command": "cd backend && npx tsx src/scripts/test-yahoo-pipes-canvas-e2e.ts"
+        },
+        {
+          "label": "Pre-Deployment API Tests",
+          "command": "cd backend && powershell -ExecutionPolicy Bypass -File pre-deployment-tests.ps1"
+        },
+        {
+          "label": "Backend Build",
+          "command": "cd backend && npm run build"
+        },
+        {
+          "label": "Frontend Build",
+          "command": "cd frontend && npm run build"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Start Frontend & Backend Servers",
+  "description": "Automatically starts both the frontend development server (Vite on port 5173) and backend server (Node on port 3000) when project files are modified, keeping them running during development",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": ""
+  },
+  "workspaceFolderName": "yahoo-resurect",
+  "shortName": "dev-servers-running"
+}

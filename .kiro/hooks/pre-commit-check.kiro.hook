@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Run All Tests",
+  "description": "Run all unit tests for backend (518 tests) and frontend (48 tests) plus TypeScript validation",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "cd backend && npm test && npx tsc --noEmit && cd ../frontend && npm test && npx tsc --noEmit"
+  }
+}
