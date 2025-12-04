@@ -1,0 +1,446 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   SEMANTIC DESIGN TOKENS
+   Theme-aware CSS Custom Properties
+   ============================================ */
+
+@layer base {
+  /* Light Mode (Default) - Yahoo Pipes Classic Feel */
+  :root {
+    /* Background Colors */
+    --bg-app: #F5F5F5;
+    --bg-surface: #FFFFFF;
+    --bg-surface-secondary: #FAFAFA;
+    --bg-surface-elevated: #FFFFFF;
+    --bg-surface-hover: #F5F5F5;
+    --bg-surface-active: #EBEBEB;
+    --bg-surface-inset: #F5F5F5;
+    --bg-canvas: #FAFAFA;
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    
+    /* Text Colors */
+    --text-primary: #171717;
+    --text-secondary: #525252;
+    --text-tertiary: #737373;
+    --text-quaternary: #A3A3A3;
+    --text-inverse: #FFFFFF;
+    --text-inverse-secondary: #D4D4D4;
+    --text-inverse-tertiary: #A3A3A3;
+    --text-link: #4A90D9;
+    --text-link-hover: #3B7CC4;
+    
+    /* Border Colors */
+    --border-default: #E5E5E5;
+    --border-muted: #F5F5F5;
+    --border-strong: #D4D4D4;
+    --border-focus: #6B4C9A;
+    --border-inverse: #404040;
+    
+    /* Inverse Backgrounds (for footer, etc.) */
+    --bg-inverse: #171717;
+    
+    /* Brand Colors - Yahoo Pipes */
+    --accent-purple: #6B4C9A;
+    --accent-purple-hover: #5B3F87;
+    --accent-purple-light: #F5F3FF;
+    --accent-purple-dark: #4C3575;
+    --accent-purple-muted: rgba(107, 76, 154, 0.1);
+    
+    --accent-blue: #4A90D9;
+    --accent-blue-hover: #3B7CC4;
+    --accent-blue-light: #EFF6FF;
+    --accent-blue-muted: rgba(74, 144, 217, 0.1);
+    
+    --accent-orange: #F5A623;
+    --accent-orange-hover: #D97706;
+    --accent-orange-light: #FFFBEB;
+    --accent-orange-muted: rgba(245, 166, 35, 0.1);
+    
+    /* Semantic Status Colors */
+    --color-success: #10B981;
+    --color-success-light: #D1FAE5;
+    --color-success-dark: #047857;
+    
+    --color-warning: #F59E0B;
+    --color-warning-light: #FEF3C7;
+    --color-warning-dark: #B45309;
+    
+    --color-error: #EF4444;
+    --color-error-light: #FEE2E2;
+    --color-error-dark: #B91C1C;
+    
+    --color-info: #3B82F6;
+    --color-info-light: #DBEAFE;
+    --color-info-dark: #1D4ED8;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    /* Canvas Grid */
+    --canvas-grid-color: #E5E5E5;
+    
+    /* Gradients */
+    --gradient-pipes: linear-gradient(135deg, #6B4C9A 0%, #4A90D9 100%);
+    --gradient-pipes-hover: linear-gradient(135deg, #5B3F87 0%, #3B7CC4 100%);
+    --gradient-pipes-active: linear-gradient(135deg, #4C3575 0%, #2D68AF 100%);
+  }
+
+  /* Dark Mode - Modern IDE Feel */
+  .dark {
+    /* Background Colors */
+    --bg-app: #0A0A0A;
+    --bg-surface: #141414;
+    --bg-surface-secondary: #1A1A1A;
+    --bg-surface-elevated: #1F1F1F;
+    --bg-surface-hover: #262626;
+    --bg-surface-active: #333333;
+    --bg-surface-inset: #0A0A0A;
+    --bg-canvas: #0F0F0F;
+    --bg-overlay: rgba(0, 0, 0, 0.75);
+    
+    /* Text Colors */
+    --text-primary: #FAFAFA;
+    --text-secondary: #A3A3A3;
+    --text-tertiary: #737373;
+    --text-quaternary: #525252;
+    /* Inverse text stays LIGHT in dark mode for dark footer background */
+    --text-inverse: #FFFFFF;
+    --text-inverse-secondary: #D4D4D4;
+    --text-inverse-tertiary: #A3A3A3;
+    --text-link: #60A5FA;
+    --text-link-hover: #93C5FD;
+    
+    /* Border Colors */
+    --border-default: #2A2A2A;
+    --border-muted: #1F1F1F;
+    --border-strong: #404040;
+    --border-focus: #A78BFA;
+    --border-inverse: #525252;
+    
+    /* Inverse Backgrounds (for footer, etc.) */
+    --bg-inverse: #0A0A0A;
+    
+    /* Brand Colors - Yahoo Pipes (Brightened for dark bg) */
+    --accent-purple: #A78BFA;
+    --accent-purple-hover: #C4B5FD;
+    --accent-purple-light: #2E1F47;
+    --accent-purple-dark: #4C3575;
+    --accent-purple-muted: rgba(167, 139, 250, 0.15);
+    
+    --accent-blue: #60A5FA;
+    --accent-blue-hover: #93C5FD;
+    --accent-blue-light: #0F4085;
+    --accent-blue-muted: rgba(96, 165, 250, 0.15);
+    
+    --accent-orange: #FBBF24;
+    --accent-orange-hover: #FCD34D;
+    --accent-orange-light: #78350F;
+    --accent-orange-muted: rgba(251, 191, 36, 0.15);
+    
+    /* Semantic Status Colors */
+    --color-success: #34D399;
+    --color-success-light: #064E3B;
+    --color-success-dark: #6EE7B7;
+    
+    --color-warning: #FBBF24;
+    --color-warning-light: #78350F;
+    --color-warning-dark: #FCD34D;
+    
+    --color-error: #F87171;
+    --color-error-light: #7F1D1D;
+    --color-error-dark: #FCA5A5;
+    
+    --color-info: #60A5FA;
+    --color-info-light: #1E3A5F;
+    --color-info-dark: #93C5FD;
+    
+    /* Shadows (less visible, use borders instead in dark) */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+    
+    /* Canvas Grid */
+    --canvas-grid-color: #2A2A2A;
+    
+    /* Gradients (same vibrant colors work well on dark) */
+    --gradient-pipes: linear-gradient(135deg, #6B4C9A 0%, #4A90D9 100%);
+    --gradient-pipes-hover: linear-gradient(135deg, #7C5DAB 0%, #5BA1EA 100%);
+    --gradient-pipes-active: linear-gradient(135deg, #5B3F87 0%, #3B7CC4 100%);
+  }
+
+  /* Base HTML styling */
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+}
+
+/* ============================================
+   REACT FLOW THEMING
+   ============================================ */
+
+/* Pipe Forge themed MiniMap */
+.react-flow__minimap {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__minimap-mask {
+  fill: var(--accent-purple-muted) !important;
+}
+
+/* Pipe Forge themed Controls */
+.react-flow__controls {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.react-flow__controls-button {
+  background: var(--bg-surface) !important;
+  border-bottom: 1px solid var(--border-muted) !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--bg-surface-hover) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--accent-purple) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+
+/* React Flow Background */
+.react-flow__background {
+  background-color: var(--bg-canvas) !important;
+}
+
+/* React Flow Edges */
+.react-flow__edge-path {
+  stroke: var(--accent-purple) !important;
+}
+
+/* React Flow Selection */
+.react-flow__selection {
+  background: var(--accent-purple-muted) !important;
+  border: 1px dashed var(--accent-purple) !important;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+/* Flow animation for pipe edges during execution */
+@keyframes flowAnimation {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Slide in animation for mobile panels */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.2s ease-out;
+}
+
+/* Slide in animation for toast notifications */
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* Horizontal bounce animation for empty canvas overlay */
+@keyframes bounce-horizontal {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-8px);
+  }
+}
+
+.animate-bounce-horizontal {
+  animation: bounce-horizontal 1.5s ease-in-out infinite;
+}
+
+/* Pulsing glow animation for unconnected output handles */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--accent-blue-muted);
+    background-color: var(--accent-blue);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+    background-color: var(--accent-blue-hover);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Shake animation for invalid drop targets */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-2px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(2px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out infinite;
+}
+
+/* Shake animation for invalid connection attempts */
+@keyframes shake-node {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+.animate-shake-node {
+  animation: shake-node 0.4s ease-in-out;
+}
+
+/* Flash animation for cycle path */
+@keyframes flash-cycle {
+  0%, 100% {
+    stroke: var(--color-error);
+    stroke-width: 3;
+    opacity: 1;
+  }
+  50% {
+    stroke: var(--color-error-light);
+    stroke-width: 4;
+    opacity: 0.6;
+  }
+}
+
+.animate-flash-cycle {
+  animation: flash-cycle 0.6s ease-in-out 3;
+}
+
+/* Fade in animation for timed hints */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Subtle bounce animation for hint arrow */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-8px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Gradient text utility */
+.text-gradient-pipes {
+  background: var(--gradient-pipes);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* Focus visible utilities */
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
