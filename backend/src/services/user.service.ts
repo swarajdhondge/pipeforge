@@ -36,6 +36,7 @@ export interface IUserService {
   generateTokens(userId: string, email: string): Promise<{ accessToken: string; refreshToken: string }>;
   refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }>;
   revokeRefreshToken(refreshToken: string): Promise<void>;
+  deleteAccount(userId: string): Promise<void>;
 }
 
 export class UserService implements IUserService {

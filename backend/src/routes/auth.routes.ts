@@ -329,9 +329,10 @@ export function createAuthRoutes(
   router.patch('/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const userId = req.user!.userId;
-      const { display_name, bio, avatar_url } = req.body;
+      const { name, display_name, bio, avatar_url } = req.body;
       
-      const user = await userService.updateProfile(userId, { display_name, bio, avatar_url });
+      // Support both 'name' and 'display_name' for backwards compatibility
+      const user = await userService.updateProfile(userId, { name: name || display_name, bio, avatar_url });
       return res.json({ user });
     } catch (error) {
       if (error instanceof ValidationError) {
