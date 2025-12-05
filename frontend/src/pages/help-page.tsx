@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { NavigationBar } from '../components/common/navigation-bar';
 import { Footer } from '../components/common/Footer';
 import { Card } from '../components/common/Card';
-import { Button } from '../components/common/Button';
 import { getSupportedSources } from '../utils/url-converter';
 import { EmailVerificationBannerSpacer } from '../components/common/EmailVerificationBanner';
 

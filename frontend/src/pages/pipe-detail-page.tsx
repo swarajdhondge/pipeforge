@@ -313,15 +313,6 @@ export const PipeDetailPage: FC = () => {
     day: 'numeric',
   }) : null;
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    addToast({
-      type: 'success',
-      title: 'Link copied!',
-      description: 'The pipe link has been copied to your clipboard.',
-    });
-  };
-
   return (
     <PageLayout>
       <div className="space-y-4 sm:space-y-6">

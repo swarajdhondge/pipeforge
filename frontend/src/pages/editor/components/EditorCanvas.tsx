@@ -1,4 +1,4 @@
-import { type FC, useCallback, useEffect, useState, useRef } from 'react';
+import { type FC, useCallback, useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import ReactFlow, {
   Background,
@@ -19,7 +19,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import type { RootState } from '../../../store/store';
-import { setNodes, setEdges, setSelectedNode, setSelectedNodes, setSelectedEdges, saveToHistory, removeEdge, removeNode, removeNodes, removeSelectedEdges, clearEdgeSelection, clearNodeSelection, toggleNodeSelection, addEdgeToSelection, clearExecutionResult } from '../../../store/slices/canvas-slice';
+import { setNodes, setEdges, setSelectedNode, setSelectedNodes, setSelectedEdges, saveToHistory, removeEdge, removeNodes, removeSelectedEdges, clearEdgeSelection, clearNodeSelection, toggleNodeSelection, addEdgeToSelection, clearExecutionResult } from '../../../store/slices/canvas-slice';
 import { propagateSchemas, clearUpstreamSchema } from '../../../store/slices/schema-slice';
 import { useKeyboardShortcuts } from '../../../hooks/use-keyboard-shortcuts';
 import { useBreakpoint } from '../../../hooks/use-media-query';
@@ -77,7 +77,7 @@ export const EditorCanvas: FC = () => {
   const { addToast } = useToast();
   const { fitView } = useReactFlow();
   const { isMobile } = useBreakpoint();
-  const { nodes: storeNodes, edges: storeEdges, selectedNode, selectedNodes, selectedEdges, executionResult, isExecuting, interactionMode, pipeLoadedAt } = useSelector(
+  const { nodes: storeNodes, edges: storeEdges, selectedNodes, selectedEdges, executionResult, isExecuting, interactionMode, pipeLoadedAt } = useSelector(
     (state: RootState) => state.canvas
   );
   

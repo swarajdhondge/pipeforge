@@ -12,7 +12,7 @@ interface ShareMenuProps {
  * 
  * Includes: Twitter/X, Facebook, LinkedIn, Reddit, WhatsApp, Copy Link
  */
-export const ShareMenu: FC<ShareMenuProps> = ({ url, title, description }) => {
+export const ShareMenu: FC<ShareMenuProps> = ({ url, title }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
