@@ -42,7 +42,12 @@ jobs:
         run: |
           gcloud builds submit \
             --tag gcr.io/${{ env.GCP_PROJECT_ID }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
+            --async \
             --quiet
+          
+          # Wait for build to complete
+          echo "Waiting for Cloud Build to complete..."
+          sleep 120
 
       - name: Deploy to Cloud Run
         run: |
@@ -72,9 +77,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Clean install dependencies
         working-directory: ./frontend
-        run: npm install
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
       - name: Build frontend
         working-directory: ./frontend
