@@ -14,12 +14,19 @@ Yahoo Pipes (2007-2015) was a revolutionary visual tool for aggregating, filteri
 - 🔒 **Secure** - Encrypted secrets, domain whitelist, rate limiting
 - 👥 **Social** - Share, fork, like, and discover community pipes
 
-## 🚀 Quick Start
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| **Frontend** | https://pipeforge-480308-ab122.web.app |
+| **Backend API** | https://pipeforge-api-1023389197722.us-central1.run.app |
+
+## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
 - Node.js 20+
 - PostgreSQL 14+
-- Redis 7+
+- Redis 7+ (or Memurai on Windows)
 
 ### 1. Clone & Setup
 
@@ -31,9 +38,9 @@ cd yahoo-resurect
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with your database credentials (see .env.example for guidance)
+# Edit .env with your database credentials
 npm run migrate
-npm run db:seed  # Creates sample pipes
+npm run db:seed  # Creates sample templates
 npm run dev
 
 # Frontend (new terminal)
@@ -55,19 +62,16 @@ Email: test@example.com
 Password: TestPassword123!
 ```
 
-## 📦 Sample Pipelines
+## 📦 Sample Templates
 
-Pipe Forge comes with 7 ready-to-use sample pipelines:
+Pipe Forge comes with 12 ready-to-use templates across 4 categories:
 
-| Difficulty | Name | Description |
-|------------|------|-------------|
-| 🟢 Simple | First 5 Posts | Fetch → Truncate → Output |
-| 🟡 Medium | User 1 Posts Sorted | Fetch → Filter → Sort → Truncate → Output |
-| 🟠 Hard | Transform & Dedupe | Fetch → Filter → Transform → Unique → Output |
-| 🔴 Complex | RSS Feed Cleaner | Fetch RSS → String Replace → Truncate → Output |
-| ⭐ | GitHub Top Repos | Fetch → Sort → Truncate → Transform → Output |
-| 📝 | Last 3 Comments | Fetch → Tail → Output |
-| 🏷️ | Rename Fields Demo | Fetch → Truncate → Rename → Output |
+| Category | Templates |
+|----------|-----------|
+| 🚀 **Getting Started** | First Steps, Last Items, Rename Fields |
+| ⚙️ **Data Processing** | Filter & Sort, Transform & Extract, Remove Duplicates |
+| 🔌 **API Integration** | GitHub Top Repos, GitHub User Profile, Weather Dashboard, DEV.to Articles |
+| 📡 **RSS & Feeds** | Tech News Feed, Reddit Feed Reader |
 
 ## 🏗️ Architecture
 
@@ -90,6 +94,145 @@ Pipe Forge comes with 7 ready-to-use sample pipelines:
 | Database | PostgreSQL 14+, Redis 7+ |
 | Auth | JWT + Google OAuth |
 | Queue | Bull (Redis-based job queue) |
+
+## 🚀 Production Deployment
+
+### Infrastructure Overview
+
+| Component | Service | Details |
+|-----------|---------|---------|
+| Backend API | Cloud Run | Auto-scaling, containerized Node.js |
+| Database | Cloud SQL | PostgreSQL 14 |
+| Cache | Upstash Redis | Serverless Redis |
+| Frontend | Firebase Hosting | Global CDN |
+| CI/CD | GitHub Actions | Auto-deploy on push to main |
+
+### CI/CD: Auto-Deploy on Push
+
+This project uses **GitHub Actions** for automatic deployment. When you push to `main`:
+1. Backend is built and deployed to Cloud Run
+2. Frontend is built and deployed to Firebase Hosting
+
+#### Required GitHub Secrets
+
+Set these in your repo: **Settings → Secrets and variables → Actions**
+
+| Secret | Description |
+|--------|-------------|
+| `GCP_SA_KEY` | GCP Service Account JSON key (with Cloud Run, Cloud Build, Storage permissions) |
+| `FIREBASE_SERVICE_ACCOUNT` | Firebase service account JSON for hosting deployment |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID for frontend |
+
+#### Creating Service Accounts
+
+```bash
+# Create service account for CI/CD
+gcloud iam service-accounts create github-actions \
+  --display-name="GitHub Actions"
+
+# Grant permissions
+gcloud projects add-iam-policy-binding pipeforge-480308 \
+  --member="serviceAccount:github-actions@pipeforge-480308.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding pipeforge-480308 \
+  --member="serviceAccount:github-actions@pipeforge-480308.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+gcloud projects add-iam-policy-binding pipeforge-480308 \
+  --member="serviceAccount:github-actions@pipeforge-480308.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountUser"
+
+# Create key and download
+gcloud iam service-accounts keys create gcp-key.json \
+  --iam-account=github-actions@pipeforge-480308.iam.gserviceaccount.com
+```
+
+### Manual Deployment
+
+#### Deploy Backend to Cloud Run
+
+```bash
+cd backend
+
+# Build and push image
+docker build -t gcr.io/pipeforge-480308/pipeforge-api .
+docker push gcr.io/pipeforge-480308/pipeforge-api
+
+# Deploy
+gcloud run deploy pipeforge-api \
+  --image gcr.io/pipeforge-480308/pipeforge-api \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --add-cloudsql-instances pipeforge-480308:us-central1:pipeforge-db
+```
+
+#### Deploy Frontend to Firebase
+
+```bash
+cd frontend
+
+# Set environment variables
+export VITE_API_URL="https://pipeforge-api-1023389197722.us-central1.run.app/api/v1"
+export VITE_GOOGLE_CLIENT_ID="your-google-client-id"
+
+# Build and deploy
+npm run build
+cd ..
+firebase deploy --only hosting
+```
+
+### Environment Variables (Cloud Run)
+
+Configure these in Cloud Run Console or via `gcloud run services update`:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `NODE_ENV` | Environment | `production` |
+| `PORT` | Server port | `8080` |
+| `DATABASE_URL` | Cloud SQL connection | `postgresql://user:pass@/db?host=/cloudsql/project:region:instance` |
+| `REDIS_URL` | Upstash Redis URL | `rediss://...` |
+| `JWT_SECRET` | JWT signing key (64 hex chars) | `91fcc384...` |
+| `SECRETS_ENCRYPTION_KEY` | AES encryption key (64 hex chars) | `6cc91e0f...` |
+| `GOOGLE_CLIENT_ID` | OAuth client ID | `123...apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | OAuth client secret | `GOCSPX-...` |
+| `GOOGLE_REDIRECT_URI` | OAuth callback URL | `https://your-api.run.app/api/v1/auth/google/callback` |
+| `FRONTEND_URL` | Frontend URL for CORS | `https://your-app.web.app` |
+| `CORS_ORIGINS` | Allowed origins | `https://your-app.web.app` |
+| `STORAGE_PROVIDER` | Storage type | `disk` |
+
+### Database Setup
+
+#### Run Migrations
+
+Connect via Cloud SQL Proxy or Cloud Shell:
+
+```bash
+gcloud sql connect pipeforge-db --user=postgres --database=pipes_prod
+```
+
+#### Seed Templates
+
+Run this SQL in the database to add sample templates:
+
+```sql
+-- See backend/src/scripts/seed-db.ts for full seed SQL
+-- Or connect locally via Cloud SQL Proxy and run:
+-- npm run db:seed
+```
+
+### Google OAuth Setup
+
+1. Go to [Google Cloud Console → APIs & Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create OAuth 2.0 Client ID (Web application)
+3. Add **Authorized JavaScript origins**:
+   - `http://localhost:5173` (dev)
+   - `https://pipeforge-480308-ab122.web.app` (prod)
+4. Add **Authorized redirect URIs**:
+   - `http://localhost:3000/api/v1/auth/google/callback` (dev)
+   - `https://pipeforge-api-1023389197722.us-central1.run.app/api/v1/auth/google/callback` (prod)
+5. Update Cloud Run environment variables with new Client ID/Secret
 
 ## 🎨 Features
 
@@ -124,45 +267,53 @@ Pipe Forge comes with 7 ready-to-use sample pipelines:
 
 ```
 pipe-forge/
-├── .kiro/                    # Kiro specs and steering docs
-│   ├── specs/                # Feature specifications
-│   │   ├── pipe-forge-launch/    # Hackathon launch spec
-│   │   ├── editor-bugfixes/      # Editor improvements
-│   │   └── ...
-│   └── steering/             # Architecture principles
-├── backend/                  # Node.js API
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # CI/CD pipeline
+├── .kiro/                       # Kiro specs and steering docs
+├── backend/                     # Node.js API
 │   ├── src/
-│   │   ├── operators/        # All operator implementations
-│   │   ├── routes/           # API endpoints
-│   │   ├── services/         # Business logic
-│   │   └── scripts/          # DB migrations, seeds
+│   │   ├── config/             # Environment config
+│   │   ├── operators/          # All operator implementations
+│   │   ├── routes/             # API endpoints
+│   │   ├── services/           # Business logic
+│   │   └── scripts/            # DB migrations, seeds
+│   ├── Dockerfile
 │   └── package.json
-├── frontend/                 # React app
+├── frontend/                    # React app
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   ├── pages/            # Route pages
-│   │   ├── store/            # Redux slices
-│   │   └── services/         # API clients
+│   │   ├── components/         # UI components
+│   │   ├── pages/              # Route pages
+│   │   ├── store/              # Redux slices
+│   │   └── services/           # API clients
 │   └── package.json
+├── firebase.json                # Firebase config
 └── README.md
 ```
 
-## 🔧 Kiro Usage
+## 🔧 Troubleshooting
 
-This project demonstrates spec-driven development with Kiro:
+### Cloud Run: Container failed to start
 
-### Steering Documents
-- `architecture-principles.md` - Core design decisions
-- `development-process.md` - How features are built
-- `frontend-standards.md` - React/TypeScript conventions
+Check logs:
+```bash
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=pipeforge-api" --limit=30
+```
 
-### Feature Specs
-Each feature follows: Requirements → Design → Tasks
+Common issues:
+- Missing environment variables (check all required vars are set)
+- PORT mismatch (must be 8080 for Cloud Run)
+- Database connection failed (check Cloud SQL instance is connected)
 
-Example: `.kiro/specs/pipe-forge-launch/`
-- `requirements.md` - Acceptance criteria
-- `design.md` - Technical approach
-- `tasks.md` - Implementation checklist
+### Google OAuth: redirect_uri_mismatch
+
+1. Verify redirect URI in Google Console matches exactly
+2. Include both `http://` and `https://` versions if needed
+3. Wait 5 minutes after changes for propagation
+
+### Database: Empty templates
+
+Run the seed script or insert SQL directly via Cloud Shell.
 
 ## 🎃 Hackathon Category
 
@@ -174,65 +325,6 @@ Example: `.kiro/specs/pipe-forge-launch/`
 2. **Modern Technology** - React, TypeScript, PostgreSQL (not Flash!)
 3. **New Capabilities** - Schema propagation, encrypted secrets, social features
 4. **Solving Today's Problems** - API mashups, data transformation, automation
-
-## 🌐 Live Demo
-
-| Service | URL |
-|---------|-----|
-| **Frontend** | https://pipeforge-480308-ab122.web.app |
-| **Backend API** | https://pipeforge-api-1023389197722.us-central1.run.app |
-
-## 🚀 Deployment
-
-### Production Infrastructure (GCP)
-
-| Component | Service | Details |
-|-----------|---------|---------|
-| Backend API | Cloud Run | Auto-scaling, containerized Node.js |
-| Database | Cloud SQL | PostgreSQL 14 (db-f1-micro) |
-| Cache | Upstash Redis | Serverless Redis |
-| Frontend | Firebase Hosting | Global CDN |
-| Secrets | Secret Manager | JWT, encryption keys, DB credentials |
-| Storage | Cloud Storage | `gs://pipeforge-uploads-480308` |
-
-### Deploy Backend to Cloud Run
-
-```bash
-# Build and push Docker image
-cd backend
-docker build -t gcr.io/PROJECT_ID/pipeforge-api .
-docker push gcr.io/PROJECT_ID/pipeforge-api
-
-# Deploy with secrets
-gcloud run deploy pipeforge-api \
-  --image gcr.io/PROJECT_ID/pipeforge-api \
-  --region us-central1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --add-cloudsql-instances PROJECT_ID:us-central1:pipeforge-db \
-  --set-secrets "DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,SECRETS_ENCRYPTION_KEY=encryption-key:latest,REDIS_URL=redis-url:latest" \
-  --set-env-vars "NODE_ENV=production,STORAGE_PROVIDER=disk,FRONTEND_URL=https://your-frontend.web.app"
-```
-
-### Deploy Frontend to Firebase
-
-```bash
-# Build with production API URL
-cd frontend
-$env:VITE_API_URL="https://your-api.run.app/api/v1"
-$env:VITE_GOOGLE_CLIENT_ID="your-google-client-id"
-npm run build
-
-# Deploy
-cd ..
-firebase deploy --only hosting
-```
-
-### Environment Variables
-
-See detailed setup in:
-- `backend/.env.example` - All backend config with GCP notes
-- `frontend/.env.example` - Frontend config
 
 ## 📝 License
 
