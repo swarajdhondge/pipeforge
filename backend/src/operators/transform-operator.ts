@@ -29,19 +29,29 @@ export class TransformOperator extends BaseOperator {
       return null;
     }
 
-    // If no mappings, pass through input data unchanged
-    // This allows the operator to be in the pipeline without breaking data flow
+    // If path is specified, extract that nested data first
+    // This allows extracting arrays from nested API responses (e.g., data.children for Reddit)
+    let data = input;
+    if (config.path) {
+      data = this.getNestedProperty(input, config.path);
+      if (data === null || data === undefined) {
+        return null;
+      }
+    }
+
+    // If no mappings, return the extracted data (or original input)
+    // This allows the operator to be used just for extraction
     if (!config.mappings || config.mappings.length === 0) {
-      return input;
+      return data;
     }
 
     // Handle array input
-    if (this.isArray(input)) {
-      return input.map((item: any) => this.transformItem(item, config));
+    if (this.isArray(data)) {
+      return data.map((item: any) => this.transformItem(item, config));
     }
 
     // Handle single object
-    return this.transformItem(input, config);
+    return this.transformItem(data, config);
   }
 
   /**

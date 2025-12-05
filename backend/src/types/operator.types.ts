@@ -186,6 +186,7 @@ export interface TransformMapping {
 }
 
 export interface TransformConfig {
+  path?: string;  // Optional path to extract data from (e.g., 'data.children' for Reddit API)
   mappings: TransformMapping[];
 }
 

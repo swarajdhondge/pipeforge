@@ -678,7 +678,7 @@ const RSS_FEED_TEMPLATES: PipeTemplate[] = [
             config: {
               field: 'title',
               search: ' - The New York Times',
-              replacement: '',
+              replace: '',
             },
           },
         },

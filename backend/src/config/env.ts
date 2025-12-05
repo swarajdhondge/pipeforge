@@ -75,14 +75,18 @@ function loadConfig(): Config {
     'restcountries.com',
     'raw.githubusercontent.com', // For CSV test data
     'hnrss.org', // For RSS test feeds
-    // New popular sources
+    // Template sources (must match seed-db.ts templates)
+    'api.open-meteo.com', // Weather Dashboard template
+    'rss.nytimes.com', // Tech News Feed template
+    'dev.to', // DEV.to API template
+    // Social platforms
     'medium.com', // Medium RSS feeds
     'reddit.com', // Reddit JSON API
     'www.reddit.com', // Reddit with www prefix
     'old.reddit.com', // Old Reddit
-    'dev.to', // DEV.to API
     'news.ycombinator.com', // Hacker News
     'hacker-news.firebaseio.com', // HN Firebase API
+    // Other popular sources
     'en.wikipedia.org', // Wikipedia English
     'api.wikipedia.org', // Wikipedia API
     'www.youtube.com', // YouTube RSS feeds
