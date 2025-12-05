@@ -105,134 +105,194 @@ Pipe Forge comes with 12 ready-to-use templates across 4 categories:
 | Database | Cloud SQL | PostgreSQL 14 |
 | Cache | Upstash Redis | Serverless Redis |
 | Frontend | Firebase Hosting | Global CDN |
+| Container Registry | Artifact Registry | Docker images |
 | CI/CD | GitHub Actions | Auto-deploy on push to main |
 
-### CI/CD: Auto-Deploy on Push
+---
+
+## 🔄 CI/CD Setup (Complete Guide)
 
 This project uses **GitHub Actions** for automatic deployment. When you push to `main`:
-1. Backend is built and deployed to Cloud Run
-2. Frontend is built and deployed to Firebase Hosting
+1. Backend is built as Docker image → pushed to Artifact Registry → deployed to Cloud Run
+2. Frontend is built → deployed to Firebase Hosting
 
-#### Required GitHub Secrets
+### Step 1: Create GCP Service Account
 
-Set these in your repo: **Settings → Secrets and variables → Actions**
-
-| Secret | Description |
-|--------|-------------|
-| `GCP_SA_KEY` | GCP Service Account JSON key (with Cloud Run, Cloud Build, Storage permissions) |
-| `FIREBASE_SERVICE_ACCOUNT` | Firebase service account JSON for hosting deployment |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID for frontend |
-
-#### Creating Service Accounts
+Run in **Google Cloud Shell**:
 
 ```bash
-# Create service account for CI/CD
+# Create service account
 gcloud iam service-accounts create github-actions \
   --display-name="GitHub Actions"
+```
 
-# Grant permissions
-gcloud projects add-iam-policy-binding pipeforge-480308 \
-  --member="serviceAccount:github-actions@pipeforge-480308.iam.gserviceaccount.com" \
+### Step 2: Grant Required Permissions
+
+The service account needs **ALL** of these roles:
+
+```bash
+# Cloud Run deployment
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/run.admin"
 
-gcloud projects add-iam-policy-binding pipeforge-480308 \
-  --member="serviceAccount:github-actions@pipeforge-480308.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-
-gcloud projects add-iam-policy-binding pipeforge-480308 \
-  --member="serviceAccount:github-actions@pipeforge-480308.iam.gserviceaccount.com" \
+# Act as service account
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
 
-# Create key and download
+# Artifact Registry (pull images)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.reader"
+
+# Artifact Registry (push images)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+# Cloud Storage (for build artifacts)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.objectAdmin"
+
+# Cloud Build (for building images)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/cloudbuild.builds.editor"
+
+# Logging (for viewing build logs)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/logging.viewer"
+
+# Service Usage (for API checks)
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+  --member="serviceAccount:github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/serviceusage.serviceUsageConsumer"
+```
+
+### Step 3: Create Artifact Registry Repository
+
+```bash
+gcloud artifacts repositories create cloud-run-source-deploy \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description="Docker images for Cloud Run"
+```
+
+### Step 4: Download Service Account Key
+
+```bash
 gcloud iam service-accounts keys create gcp-key.json \
-  --iam-account=github-actions@pipeforge-480308.iam.gserviceaccount.com
+  --iam-account=github-actions@YOUR_PROJECT_ID.iam.gserviceaccount.com
+
+# Display the key (copy this for GitHub secret)
+cat gcp-key.json
 ```
 
-### Manual Deployment
+### Step 5: Get Firebase Service Account
 
-#### Deploy Backend to Cloud Run
+1. Go to [Firebase Console](https://console.firebase.google.com) → Your Project
+2. ⚙️ Settings → **Service accounts** tab
+3. Click **"Generate new private key"**
+4. Download the JSON file
 
-```bash
-cd backend
-
-# Build and push image
-docker build -t gcr.io/pipeforge-480308/pipeforge-api .
-docker push gcr.io/pipeforge-480308/pipeforge-api
-
-# Deploy
-gcloud run deploy pipeforge-api \
-  --image gcr.io/pipeforge-480308/pipeforge-api \
-  --region us-central1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --add-cloudsql-instances pipeforge-480308:us-central1:pipeforge-db
-```
-
-#### Deploy Frontend to Firebase
-
-```bash
-cd frontend
-
-# Set environment variables
-export VITE_API_URL="https://pipeforge-api-1023389197722.us-central1.run.app/api/v1"
-export VITE_GOOGLE_CLIENT_ID="your-google-client-id"
-
-# Build and deploy
-npm run build
-cd ..
-firebase deploy --only hosting
-```
-
-### Environment Variables (Cloud Run)
-
-Configure these in Cloud Run Console or via `gcloud run services update`:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment | `production` |
-| `PORT` | Server port | `8080` |
-| `DATABASE_URL` | Cloud SQL connection | `postgresql://user:pass@/db?host=/cloudsql/project:region:instance` |
-| `REDIS_URL` | Upstash Redis URL | `rediss://...` |
-| `JWT_SECRET` | JWT signing key (64 hex chars) | `91fcc384...` |
-| `SECRETS_ENCRYPTION_KEY` | AES encryption key (64 hex chars) | `6cc91e0f...` |
-| `GOOGLE_CLIENT_ID` | OAuth client ID | `123...apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET` | OAuth client secret | `GOCSPX-...` |
-| `GOOGLE_REDIRECT_URI` | OAuth callback URL | `https://your-api.run.app/api/v1/auth/google/callback` |
-| `FRONTEND_URL` | Frontend URL for CORS | `https://your-app.web.app` |
-| `CORS_ORIGINS` | Allowed origins | `https://your-app.web.app` |
-| `STORAGE_PROVIDER` | Storage type | `disk` |
-
-### Database Setup
-
-#### Run Migrations
-
-Connect via Cloud SQL Proxy or Cloud Shell:
-
-```bash
-gcloud sql connect pipeforge-db --user=postgres --database=pipes_prod
-```
-
-#### Seed Templates
-
-Run this SQL in the database to add sample templates:
-
-```sql
--- See backend/src/scripts/seed-db.ts for full seed SQL
--- Or connect locally via Cloud SQL Proxy and run:
--- npm run db:seed
-```
-
-### Google OAuth Setup
+### Step 6: Create Google OAuth Credentials
 
 1. Go to [Google Cloud Console → APIs & Credentials](https://console.cloud.google.com/apis/credentials)
-2. Create OAuth 2.0 Client ID (Web application)
-3. Add **Authorized JavaScript origins**:
-   - `http://localhost:5173` (dev)
-   - `https://pipeforge-480308-ab122.web.app` (prod)
-4. Add **Authorized redirect URIs**:
-   - `http://localhost:3000/api/v1/auth/google/callback` (dev)
-   - `https://pipeforge-api-1023389197722.us-central1.run.app/api/v1/auth/google/callback` (prod)
-5. Update Cloud Run environment variables with new Client ID/Secret
+2. Click **+ CREATE CREDENTIALS** → **OAuth client ID**
+3. Application type: **Web application**
+4. Add **Authorized JavaScript origins**:
+   - `http://localhost:5173`
+   - `https://YOUR_FIREBASE_APP.web.app`
+5. Add **Authorized redirect URIs**:
+   - `http://localhost:3000/api/v1/auth/google/callback`
+   - `https://YOUR_CLOUD_RUN_URL/api/v1/auth/google/callback`
+
+### Step 7: Add GitHub Secrets
+
+Go to GitHub → Your Repo → **Settings** → **Secrets and variables** → **Actions**
+
+Add these 3 secrets:
+
+| Secret Name | Value |
+|-------------|-------|
+| `GCP_SA_KEY` | Entire JSON from `gcp-key.json` |
+| `FIREBASE_SERVICE_ACCOUNT` | Entire JSON from Firebase Console |
+| `GOOGLE_CLIENT_ID` | OAuth Client ID (e.g., `123...apps.googleusercontent.com`) |
+
+### Step 8: Configure Cloud Run Environment Variables
+
+Go to [Cloud Run Console](https://console.cloud.google.com/run) → Your Service → **Edit & Deploy** → **Variables & Secrets**
+
+Add these environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `NODE_ENV` | `production` |
+| `PORT` | `8080` |
+| `DATABASE_URL` | `postgresql://user:pass@/db?host=/cloudsql/project:region:instance` |
+| `REDIS_URL` | Your Upstash Redis URL |
+| `JWT_SECRET` | 64 hex character secret |
+| `SECRETS_ENCRYPTION_KEY` | 64 hex character key |
+| `GOOGLE_CLIENT_ID` | OAuth Client ID |
+| `GOOGLE_CLIENT_SECRET` | OAuth Client Secret |
+| `GOOGLE_REDIRECT_URI` | `https://YOUR_CLOUD_RUN_URL/api/v1/auth/google/callback` |
+| `FRONTEND_URL` | `https://YOUR_FIREBASE_APP.web.app` |
+| `CORS_ORIGINS` | `https://YOUR_FIREBASE_APP.web.app` |
+| `STORAGE_PROVIDER` | `disk` |
+
+### Step 9: Push to Deploy!
+
+```bash
+git add .
+git commit -m "your changes"
+git push origin main
+```
+
+Watch the **Actions** tab - both jobs should turn green! ✅
+
+---
+
+## 📊 Complete Permissions Summary
+
+| Role | Purpose |
+|------|---------|
+| `roles/run.admin` | Deploy containers to Cloud Run |
+| `roles/iam.serviceAccountUser` | Act as the service account |
+| `roles/artifactregistry.reader` | Pull Docker images |
+| `roles/artifactregistry.writer` | Push Docker images |
+| `roles/storage.admin` | Access Cloud Storage buckets |
+| `roles/storage.objectAdmin` | Manage storage objects |
+| `roles/cloudbuild.builds.editor` | Trigger Cloud Build |
+| `roles/logging.viewer` | View build logs |
+| `roles/serviceusage.serviceUsageConsumer` | Check API enablement |
+
+---
+
+## 🗄️ Database Setup
+
+### Seed Production Database
+
+Connect via Cloud Shell:
+
+```bash
+gcloud sql connect YOUR_DB_INSTANCE --user=postgres --database=YOUR_DB_NAME
+```
+
+Then run the seed SQL from `backend/src/scripts/seed-db.ts` or use:
+
+```bash
+# Via Cloud SQL Proxy locally
+npm run db:seed
+```
+
+---
 
 ## 🎨 Features
 
@@ -270,7 +330,6 @@ pipe-forge/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml          # CI/CD pipeline
-├── .kiro/                       # Kiro specs and steering docs
 ├── backend/                     # Node.js API
 │   ├── src/
 │   │   ├── config/             # Environment config
@@ -288,32 +347,40 @@ pipe-forge/
 │   │   └── services/           # API clients
 │   └── package.json
 ├── firebase.json                # Firebase config
+├── .firebaserc                  # Firebase project config
 └── README.md
 ```
 
 ## 🔧 Troubleshooting
 
-### Cloud Run: Container failed to start
+### CI/CD: Permission denied on Artifact Registry
 
-Check logs:
-```bash
-gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=pipeforge-api" --limit=30
+Ensure these roles are granted to the service account:
+- `roles/artifactregistry.reader`
+- `roles/artifactregistry.writer`
+
+### CI/CD: Cannot find @rollup/rollup-linux-x64-gnu
+
+The workflow explicitly installs this package. If it fails, the workflow includes:
+```yaml
+npm install @rollup/rollup-linux-x64-gnu --save-optional
 ```
 
-Common issues:
-- Missing environment variables (check all required vars are set)
-- PORT mismatch (must be 8080 for Cloud Run)
-- Database connection failed (check Cloud SQL instance is connected)
+### Cloud Run: Container failed to start
+
+1. Check logs: `gcloud logging read "resource.type=cloud_run_revision"`
+2. Verify all environment variables are set in Cloud Run Console
+3. Ensure PORT is set to `8080`
 
 ### Google OAuth: redirect_uri_mismatch
 
 1. Verify redirect URI in Google Console matches exactly
-2. Include both `http://` and `https://` versions if needed
-3. Wait 5 minutes after changes for propagation
+2. Include the full path: `https://your-api.run.app/api/v1/auth/google/callback`
+3. Wait 5 minutes for changes to propagate
 
 ### Database: Empty templates
 
-Run the seed script or insert SQL directly via Cloud Shell.
+Connect to Cloud SQL and run the seed SQL, or use Cloud SQL Proxy to run `npm run db:seed` locally.
 
 ## 🎃 Hackathon Category
 
