@@ -175,44 +175,64 @@ Example: `.kiro/specs/pipe-forge-launch/`
 3. **New Capabilities** - Schema propagation, encrypted secrets, social features
 4. **Solving Today's Problems** - API mashups, data transformation, automation
 
+## 🌐 Live Demo
+
+| Service | URL |
+|---------|-----|
+| **Frontend** | https://pipeforge-480308-ab122.web.app |
+| **Backend API** | https://pipeforge-api-1023389197722.us-central1.run.app |
+
 ## 🚀 Deployment
 
-### Production Build
+### Production Infrastructure (GCP)
+
+| Component | Service | Details |
+|-----------|---------|---------|
+| Backend API | Cloud Run | Auto-scaling, containerized Node.js |
+| Database | Cloud SQL | PostgreSQL 14 (db-f1-micro) |
+| Cache | Upstash Redis | Serverless Redis |
+| Frontend | Firebase Hosting | Global CDN |
+| Secrets | Secret Manager | JWT, encryption keys, DB credentials |
+| Storage | Cloud Storage | `gs://pipeforge-uploads-480308` |
+
+### Deploy Backend to Cloud Run
 
 ```bash
-# Backend
+# Build and push Docker image
 cd backend
-npm run build
-npm start  # Runs compiled JS from dist/
+docker build -t gcr.io/PROJECT_ID/pipeforge-api .
+docker push gcr.io/PROJECT_ID/pipeforge-api
 
-# Frontend
-cd frontend
-npm run build  # Creates dist/ folder
-# Serve dist/ with any static host (Vercel, Netlify, Cloud Storage, etc.)
+# Deploy with secrets
+gcloud run deploy pipeforge-api \
+  --image gcr.io/PROJECT_ID/pipeforge-api \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --add-cloudsql-instances PROJECT_ID:us-central1:pipeforge-db \
+  --set-secrets "DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,SECRETS_ENCRYPTION_KEY=encryption-key:latest,REDIS_URL=redis-url:latest" \
+  --set-env-vars "NODE_ENV=production,STORAGE_PROVIDER=disk,FRONTEND_URL=https://your-frontend.web.app"
 ```
 
-### GCP Cloud Run (Backend)
+### Deploy Frontend to Firebase
 
-1. **Prerequisites**: GCP project with Cloud SQL (PostgreSQL) and Memorystore (Redis)
-2. **Set environment variables** in Cloud Run console (see `backend/.env.example` for full list)
-3. **Deploy**:
-   ```bash
-   cd backend
-   gcloud run deploy pipe-forge-api --source . --region us-central1
-   ```
+```bash
+# Build with production API URL
+cd frontend
+$env:VITE_API_URL="https://your-api.run.app/api/v1"
+$env:VITE_GOOGLE_CLIENT_ID="your-google-client-id"
+npm run build
 
-### Frontend Hosting
-
-The frontend is a static React app. After `npm run build`, deploy the `dist/` folder to:
-- **Vercel/Netlify**: Connect repo, set build command to `cd frontend && npm run build`
-- **GCP Cloud Storage**: `gsutil -m cp -r dist/* gs://your-bucket/`
-- **Firebase Hosting**: `firebase deploy --only hosting`
+# Deploy
+cd ..
+firebase deploy --only hosting
+```
 
 ### Environment Variables
 
 See detailed setup in:
 - `backend/.env.example` - All backend config with GCP notes
-- `frontend/.env.example` - Frontend config (optional, uses proxy by default)
+- `frontend/.env.example` - Frontend config
 
 ## 📝 License
 
