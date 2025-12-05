@@ -1,5 +1,5 @@
 import { useState, useEffect, type FC } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { pipeService, type Pipe } from '../services/pipe-service';
 import { PipeCard } from '../components/pipes/PipeCard';
 import { useAuth } from '../hooks/use-auth';
@@ -18,6 +18,7 @@ import { Avatar } from '../components/common/Avatar';
 
 export const UserProfilePage: FC = () => {
   const { userId: userIdParam } = useParams<{ userId: string }>();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [pipes, setPipes] = useState<Pipe[]>([]);
@@ -25,7 +26,16 @@ export const UserProfilePage: FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [versionHistoryPipeId, setVersionHistoryPipeId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'pipes' | 'drafts' | 'liked' | 'secrets'>('pipes');
+  
+  // Read initial tab from URL query param (?tab=secrets, ?tab=drafts, ?tab=liked)
+  const tabParam = searchParams.get('tab');
+  const getInitialTab = (): 'pipes' | 'drafts' | 'liked' | 'secrets' => {
+    if (tabParam === 'secrets' || tabParam === 'drafts' || tabParam === 'liked') {
+      return tabParam;
+    }
+    return 'pipes';
+  };
+  const [activeTab, setActiveTab] = useState<'pipes' | 'drafts' | 'liked' | 'secrets'>(getInitialTab());
   const [likedPipes, setLikedPipes] = useState<Pipe[]>([]);
   const [likedLoading, setLikedLoading] = useState(false);
   

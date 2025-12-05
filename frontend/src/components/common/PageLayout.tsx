@@ -27,8 +27,8 @@ export const PageLayout: FC<PageLayoutProps> = ({
   padding = true,
   className = '',
 }) => {
-  // Responsive padding: 16px (px-4) on mobile, 24px (px-6) on desktop
-  const paddingClasses = padding ? 'px-4 md:px-6 py-4 md:py-6 lg:py-8' : '';
+  // Responsive padding: matches nav/footer (16px -> 24px -> 32px)
+  const paddingClasses = padding ? 'px-4 sm:px-6 lg:px-8 py-4 md:py-6 lg:py-8' : '';
   
   return (
     <div className="min-h-screen flex flex-col bg-bg-app transition-colors">
@@ -58,7 +58,8 @@ export const PageLayout: FC<PageLayoutProps> = ({
 
 /**
  * Simple content container for consistent max-width and padding
- * Responsive padding: 16px (px-4) on mobile, 24px (px-6) on desktop
+ * Responsive padding: 16px (px-4) -> 24px (sm:px-6) -> 32px (lg:px-8)
+ * Matches nav/footer for perfect alignment
  */
 export const Container: FC<{
   children: ReactNode;
@@ -68,7 +69,7 @@ export const Container: FC<{
   return (
     <div
       className={`
-        mx-auto w-full px-4 md:px-6
+        mx-auto w-full px-4 sm:px-6 lg:px-8
         ${maxWidthClasses[maxWidth]}
         ${className}
       `.trim().replace(/\s+/g, ' ')}

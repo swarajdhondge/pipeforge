@@ -5,16 +5,16 @@ export const Footer: FC = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-bg-inverse text-text-inverse-secondary">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Main footer content */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-          {/* Brand */}
-          <div className="sm:col-span-2">
-            <Link to="/" className="text-xl font-bold text-text-inverse">
+    <footer className="bg-bg-inverse text-text-inverse-secondary w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {/* Main footer content - flex for proper alignment with nav */}
+        <div className="flex flex-col sm:flex-row sm:justify-between gap-8">
+          {/* Brand - left side */}
+          <div className="flex-1 max-w-lg">
+            <Link to="/" className="text-xl font-bold text-text-inverse inline-flex items-center gap-2">
               🔧 Pipe Forge
             </Link>
-            <p className="mt-3 text-sm text-text-inverse-tertiary max-w-md">
+            <p className="mt-3 text-sm text-text-inverse-tertiary">
               Visual data pipelines for everyone. Connect APIs, transform data, 
               and automate workflows with an intuitive drag-and-drop interface.
             </p>
@@ -23,8 +23,8 @@ export const Footer: FC = () => {
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
+          {/* Quick Links - right side */}
+          <div className="sm:text-right">
             <h3 className="text-sm font-semibold text-text-inverse uppercase tracking-wider mb-4">
               Quick Links
             </h3>
@@ -63,10 +63,10 @@ export const Footer: FC = () => {
               </li>
               <li>
                 <Link
-                  to="/contact"
+                  to="/shortcuts"
                   className="text-sm text-text-inverse-tertiary hover:text-text-inverse transition-colors"
                 >
-                  Contact
+                  Keyboard Shortcuts
                 </Link>
               </li>
             </ul>
@@ -74,17 +74,17 @@ export const Footer: FC = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 pt-6 border-t border-border-inverse">
+        <div className="mt-8 pt-6 border-t border-white/10">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-text-inverse-tertiary text-center sm:text-left">
               © {currentYear} Pipe Forge. Built for the Kiroween Hackathon 🎃
             </p>
             <div className="flex items-center gap-4">
               <a
-                href="https://github.com/pipeforge/pipe-forge"
+                href="https://github.com/swarajdhondge/pipeforge"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-text-inverse-tertiary hover:text-text-inverse transition-colors p-1"
+                className="text-text-inverse-tertiary hover:text-text-inverse transition-colors flex items-center gap-1.5"
                 aria-label="GitHub"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -92,15 +92,13 @@ export const Footer: FC = () => {
                 </svg>
               </a>
               <a
-                href="https://devpost.com/software/pipe-forge"
+                href="https://github.com/swarajdhondge/pipeforge/issues"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-text-inverse-tertiary hover:text-text-inverse transition-colors p-1"
-                aria-label="Devpost"
+                className="text-text-inverse-tertiary hover:text-text-inverse transition-colors text-sm"
+                aria-label="Report Issue"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6.002 1.61L0 12.004L6.002 22.39h11.996L24 12.004L17.998 1.61H6.002zm1.593 4.084h3.947c3.605 0 6.276 1.695 6.276 6.31c0 4.436-3.21 6.302-6.456 6.302H7.595V5.694zm2.517 2.449v7.714h1.241c2.646 0 3.862-1.55 3.862-3.861c.009-2.569-1.096-3.853-3.767-3.853h-1.336z"/>
-                </svg>
+                Report Issue
               </a>
             </div>
           </div>

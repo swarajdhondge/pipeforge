@@ -235,6 +235,38 @@
   background-color: var(--bg-canvas) !important;
 }
 
+/* Canvas cursor - crosshair for better visibility on both themes */
+.react-flow__pane {
+  cursor: crosshair !important;
+}
+
+.react-flow__pane.dragging {
+  cursor: grabbing !important;
+}
+
+.react-flow__node {
+  cursor: grab !important;
+}
+
+.react-flow__node.dragging {
+  cursor: grabbing !important;
+}
+
+/* MiniMap styling - simple node-only view */
+.react-flow__minimap {
+  background-color: var(--bg-surface) !important;
+}
+
+.react-flow__minimap-mask {
+  fill: rgba(124, 58, 237, 0.1) !important;
+}
+
+.react-flow__minimap-node {
+  fill: #7C3AED !important;
+  stroke: none !important;
+  rx: 2;
+}
+
 /* React Flow Edges */
 .react-flow__edge-path {
   stroke: var(--accent-purple) !important;

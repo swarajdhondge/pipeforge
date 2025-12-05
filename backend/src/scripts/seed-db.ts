@@ -725,7 +725,7 @@ const RSS_FEED_TEMPLATES: PipeTemplate[] = [
           data: {
             label: 'Fetch r/programming',
             config: {
-              url: 'https://reddit.com/r/programming.json',
+              url: 'https://www.reddit.com/r/programming.json?raw_json=1',
             },
           },
         },

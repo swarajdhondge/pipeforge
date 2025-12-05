@@ -262,12 +262,34 @@ export const EditorResultsPanel: FC<EditorResultsPanelProps> = ({
                     )}
                   </h3>
                   {result.status === 'success' && (
-                    <button
-                      onClick={() => copyToClipboard(JSON.stringify(result.result, null, 2))}
-                      className="px-2 py-1 text-xs text-text-link hover:bg-accent-purple-light rounded transition-colors"
-                    >
-                      Copy
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => copyToClipboard(JSON.stringify(result.result, null, 2))}
+                        className="px-2.5 py-1 text-xs bg-accent-purple text-white hover:bg-accent-purple-dark rounded transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copy JSON
+                      </button>
+                      <button
+                        onClick={() => {
+                          const blob = new Blob([JSON.stringify(result.result, null, 2)], { type: 'application/json' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = 'pipe-result.json';
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="px-2.5 py-1 text-xs bg-bg-surface-secondary border border-border-default text-text-secondary hover:bg-bg-surface-hover rounded transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="bg-bg-surface-secondary border border-border-default rounded-md p-3 max-h-48 overflow-auto">
@@ -336,8 +358,11 @@ export const EditorResultsPanel: FC<EditorResultsPanelProps> = ({
                             {!isError && (
                               <button
                                 onClick={() => copyToClipboard(JSON.stringify(intermediate.result, null, 2))}
-                                className="text-xs text-text-link hover:underline"
+                                className="text-xs text-accent-purple hover:text-accent-purple-dark flex items-center gap-0.5"
                               >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
                                 Copy
                               </button>
                             )}

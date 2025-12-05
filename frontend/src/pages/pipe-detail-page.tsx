@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, type FC } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import ReactFlow, { Background, Controls, BackgroundVariant, type NodeTypes, type EdgeTypes } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useAuth } from '../hooks/use-auth';
@@ -13,6 +13,7 @@ import { Card } from '../components/common/Card';
 import { Skeleton } from '../components/common/Skeleton';
 import { Tooltip } from '../components/common/Tooltip';
 import { useToast } from '../components/common/Toast';
+import { ShareMenu } from '../components/common/ShareMenu';
 import { KNOWN_OPERATOR_TYPES } from '../types/operator.types';
 
 // Define node types outside component to avoid ReactFlow warnings
@@ -60,11 +61,17 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 export const PipeDetailPage: FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user } = useAuth();
   const { addToast } = useToast();
   const [pipe, setPipe] = useState<Pipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Determine back link based on where user came from
+  const fromTemplates = location.state?.from === 'templates' || document.referrer.includes('/templates');
+  const backLink = fromTemplates ? '/templates' : '/explore';
+  const backLabel = fromTemplates ? 'Back to Templates' : 'Back to Explore';
 
   // Process nodes to handle unknown operator types (Requirement 19.5)
   const processedNodes = useMemo(() => {
@@ -318,15 +325,15 @@ export const PipeDetailPage: FC = () => {
   return (
     <PageLayout>
       <div className="space-y-4 sm:space-y-6">
-        {/* Back link */}
+        {/* Back link - context-aware based on where user came from */}
         <Link 
-          to="/explore" 
+          to={backLink} 
           className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-accent-purple transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Explore
+          {backLabel}
         </Link>
 
         {/* Header Card */}
@@ -462,11 +469,12 @@ export const PipeDetailPage: FC = () => {
                 </Link>
               )}
               
-              <Tooltip content="Copy link to clipboard">
-                <Button variant="ghost" onClick={handleCopyLink} className="flex-1 lg:flex-none">
-                  🔗 Share
-                </Button>
-              </Tooltip>
+              {/* Social media share menu (Task 4) */}
+              <ShareMenu 
+                url={window.location.href} 
+                title={pipe.name} 
+                description={pipe.description}
+              />
               
               {isOwner && (
                 <>
@@ -526,7 +534,7 @@ export const PipeDetailPage: FC = () => {
                 More by {authorName}
               </h2>
               <Link 
-                to={`/profile/${pipe.user_id}`}
+                to={`/users/${pipe.user_id}`}
                 className="text-sm text-text-link hover:text-accent-purple"
               >
                 View profile →

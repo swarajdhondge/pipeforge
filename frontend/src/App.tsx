@@ -18,6 +18,7 @@ import { WelcomeModal, useWelcomeModal } from './components/common/WelcomeModal'
 import { SessionExpiredModal, useSessionExpiry } from './components/common/SessionExpiredModal';
 import { EmailVerificationBanner, EmailVerificationProvider } from './components/common/EmailVerificationBanner';
 import { Spinner } from './components/common/Spinner';
+import { ScrollToTop } from './components/common/ScrollToTop';
 import { initializeLocalStorage } from './utils/localStorage';
 
 // Lazy load pages for code splitting
@@ -149,6 +150,7 @@ function App() {
         <ThemeProvider>
           <ToastProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <EmailVerificationProvider>
                 <AppContent />
               </EmailVerificationProvider>

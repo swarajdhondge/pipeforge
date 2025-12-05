@@ -4,10 +4,11 @@ import type { RootState } from '../../../store/store';
 import { addNode, saveToHistory } from '../../../store/slices/canvas-slice';
 import { useBreakpoint } from '../../../hooks/use-media-query';
 
-// Operator categories
+// Operator categories with category icons for collapsed view
 const operatorCategories = [
   {
     name: 'Sources',
+    categoryIcon: '📥',
     operators: [
       { type: 'fetch-json', label: 'Fetch JSON', icon: '📄' },
       { type: 'fetch-csv', label: 'Fetch CSV', icon: '📊' },
@@ -17,6 +18,7 @@ const operatorCategories = [
   },
   {
     name: 'User Inputs',
+    categoryIcon: '📝',
     operators: [
       { type: 'text-input', label: 'Text Input', icon: '📝' },
       { type: 'number-input', label: 'Number Input', icon: '🔢' },
@@ -26,6 +28,7 @@ const operatorCategories = [
   },
   {
     name: 'Operators',
+    categoryIcon: '⚙️',
     operators: [
       { type: 'filter', label: 'Filter', icon: '🔍' },
       { type: 'sort', label: 'Sort', icon: '↕️' },
@@ -38,6 +41,7 @@ const operatorCategories = [
   },
   {
     name: 'String',
+    categoryIcon: '🔤',
     operators: [
       { type: 'string-replace', label: 'Replace', icon: '🔤' },
       { type: 'regex', label: 'Regex', icon: '🔠' },
@@ -46,10 +50,12 @@ const operatorCategories = [
   },
   {
     name: 'URL',
+    categoryIcon: '🔗',
     operators: [{ type: 'url-builder', label: 'URL Builder', icon: '🔗' }],
   },
   {
     name: 'Output',
+    categoryIcon: '📤',
     operators: [{ type: 'pipe-output', label: 'Pipe Output', icon: '📤' }],
   },
 ];
@@ -96,6 +102,9 @@ export const OperatorsSidebar: FC<OperatorsSidebarProps> = ({ isOpen: controlled
   
   // Internal state for uncontrolled mode
   const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Collapsed state for desktop sidebar (Task 9)
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
   // Use controlled or uncontrolled state
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
@@ -226,10 +235,102 @@ export const OperatorsSidebar: FC<OperatorsSidebarProps> = ({ isOpen: controlled
     );
   }
 
-  // Desktop: Render as fixed sidebar
+  // Desktop: Render as fixed sidebar (supports collapsed state - Task 9)
+  if (isCollapsed) {
+    // Collapsed view: show only category icons
+    return (
+      <div className="w-12 bg-bg-surface border-r border-border-default flex-shrink-0 flex flex-col overflow-hidden">
+        {/* Collapse toggle button */}
+        <div className="p-2 border-b border-border-default flex justify-center">
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="p-1.5 text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hover rounded transition-colors"
+            aria-label="Expand operators panel"
+            title="Expand sidebar"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Category icons */}
+        <div className="py-2 flex-1 overflow-y-auto">
+          {operatorCategories.map((category) => (
+            <button
+              key={category.name}
+              onClick={() => {
+                setIsCollapsed(false);
+                setExpandedCategory(category.name);
+              }}
+              className="w-full p-2 flex justify-center hover:bg-bg-surface-hover transition-colors"
+              title={category.name}
+              aria-label={`${category.name} operators`}
+            >
+              <span className="text-lg">{category.categoryIcon}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop: Expanded view
   return (
     <div className="w-56 bg-bg-surface border-r border-border-default flex-shrink-0 flex flex-col overflow-hidden">
-      {sidebarContent}
+      {/* Header with collapse toggle */}
+      <div className="p-3 border-b border-border-default flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-text-primary">Operators</h2>
+        <button
+          onClick={() => setIsCollapsed(true)}
+          className="p-1 text-text-tertiary hover:text-text-primary hover:bg-bg-surface-hover rounded transition-colors"
+          aria-label="Collapse operators panel"
+          title="Collapse sidebar"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+      
+      <div className="py-1 flex-1 overflow-y-auto">
+        {operatorCategories.map((category) => (
+          <div key={category.name}>
+            <button
+              onClick={() => setExpandedCategory(expandedCategory === category.name ? '' : category.name)}
+              className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-bg-surface-hover"
+            >
+              <span className="text-xs font-medium text-text-secondary uppercase tracking-wide">{category.name}</span>
+              <svg 
+                className={`w-4 h-4 text-text-tertiary transition-transform ${expandedCategory === category.name ? 'rotate-180' : ''}`} 
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {expandedCategory === category.name && (
+              <div className="pb-2">
+                {category.operators.map((op) => (
+                  <button
+                    key={op.type}
+                    onClick={() => handleAddOperator(op.type, op.label)}
+                    className="w-full px-4 py-1.5 flex items-center gap-2 text-left hover:bg-bg-surface-hover group"
+                  >
+                    <span className="text-sm">{op.icon}</span>
+                    <span className="text-sm text-text-primary flex-1">{op.label}</span>
+                    <span className="w-5 h-5 flex items-center justify-center rounded bg-status-success-light text-status-success opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

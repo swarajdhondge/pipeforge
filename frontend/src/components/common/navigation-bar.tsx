@@ -175,14 +175,6 @@ export const NavigationBar: FC = () => {
                       <span>📚</span>
                       <span>Help & Docs</span>
                     </Link>
-                    <Link
-                      to="/templates"
-                      className="block px-4 py-2 text-sm text-text-primary hover:bg-bg-surface-hover flex items-center gap-2"
-                      onClick={() => setShowHelpDropdown(false)}
-                    >
-                      <span>🧩</span>
-                      <span>Templates</span>
-                    </Link>
                     <hr className="my-1 border-border-muted" />
                     <Link
                       to="/contact"

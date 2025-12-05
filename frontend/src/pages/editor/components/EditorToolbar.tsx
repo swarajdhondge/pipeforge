@@ -2,7 +2,7 @@ import { type FC, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import type { RootState } from '../../../store/store';
-import { markClean, undo, redo, setExecutionResult, setIsExecuting, clearExecutionResult, updateNode, clearRunSelectedTrigger } from '../../../store/slices/canvas-slice';
+import { markClean, undo, redo, setExecutionResult, setIsExecuting, clearExecutionResult, updateNode, clearRunSelectedTrigger, removeNodes, removeSelectedEdges, saveToHistory, setInteractionMode } from '../../../store/slices/canvas-slice';
 import { PipeMetadataPanel } from '../../../components/editor/PipeMetadataPanel';
 import { savePipe, saveDraft } from '../logic/saving-logic';
 import { executePipe, executeSelected, formatExecutionResult, validatePipeForExecution } from '../logic/execution-logic';
@@ -29,12 +29,18 @@ export const EditorToolbar: FC = () => {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const { isMobile } = useBreakpoint();
-  const { isDirty, nodes, edges, history, isExecuting, runSelectedNodeId } = useSelector((state: RootState) => state.canvas);
+  const { isDirty, nodes, edges, history, isExecuting, runSelectedNodeId, selectedNodes, selectedEdges, interactionMode } = useSelector((state: RootState) => state.canvas);
   
   const [showSavePanel, setShowSavePanel] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showUserInputDialog, setShowUserInputDialog] = useState(false);
   const [pendingUserInputNodes, setPendingUserInputNodes] = useState<ReturnType<typeof detectUserInputNodes>>([]);
+  
+  // Cooldown state for rate limiting Run button (Task 11)
+  const [cooldownActive, setCooldownActive] = useState(false);
+  
+  // Check if any item is selected for delete button (Task 6)
+  const hasSelection = selectedNodes.length > 0 || selectedEdges.length > 0;
   
   const canUndo = history.past.length > 0;
   const canRedo = history.future.length > 0;
@@ -64,6 +70,33 @@ export const EditorToolbar: FC = () => {
       updateNodeStatus(node.id, 'idle');
     });
   }, [nodes, updateNodeStatus]);
+
+  // Handle delete selected items (Task 6) - supports multi-select
+  const handleDelete = useCallback(() => {
+    if (!hasSelection) return;
+    
+    dispatch(saveToHistory());
+    
+    // Delete all selected nodes
+    if (selectedNodes.length > 0) {
+      dispatch(removeNodes(selectedNodes));
+    }
+    
+    // Delete selected edges if any
+    if (selectedEdges.length > 0) {
+      dispatch(removeSelectedEdges());
+    }
+    
+    const nodeCount = selectedNodes.length;
+    const edgeCount = selectedEdges.length;
+    const description = nodeCount > 0 && edgeCount > 0 
+      ? `${nodeCount} node(s) and ${edgeCount} connection(s) removed`
+      : nodeCount > 0 
+        ? `${nodeCount} node(s) removed` 
+        : `${edgeCount} connection(s) removed`;
+    
+    addToast({ type: 'success', title: 'Deleted', description });
+  }, [hasSelection, selectedNodes, selectedEdges, dispatch, addToast]);
 
   // Register keyboard shortcuts for undo/redo
   useKeyboardShortcuts([
@@ -193,6 +226,9 @@ export const EditorToolbar: FC = () => {
       addToast({ type: 'error', title: 'Execution failed', description: errorResult.error });
     } finally {
       dispatch(setIsExecuting(false));
+      // Activate cooldown to prevent spam clicking (Task 11)
+      setCooldownActive(true);
+      setTimeout(() => setCooldownActive(false), 2000);
     }
   }, [nodes, edges, dispatch, updateNodeStatus, resetAllNodeStatuses, addToast]);
 
@@ -331,6 +367,53 @@ export const EditorToolbar: FC = () => {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" /></svg>
         </button>
         
+        {/* Pan/Select mode toggle */}
+        <div className="flex border border-border-default rounded overflow-hidden">
+          <button 
+            onClick={() => dispatch(setInteractionMode('pan'))} 
+            className={`p-1.5 transition-colors ${
+              interactionMode === 'pan' 
+                ? 'bg-accent-purple text-white' 
+                : 'text-text-secondary hover:bg-bg-surface-hover'
+            }`}
+            title="Move mode - drag canvas to pan"
+            aria-label="Move mode"
+          >
+            {/* Hand/Move icon */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+            </svg>
+          </button>
+          <button 
+            onClick={() => dispatch(setInteractionMode('select'))} 
+            className={`p-1.5 transition-colors ${
+              interactionMode === 'select' 
+                ? 'bg-accent-purple text-white' 
+                : 'text-text-secondary hover:bg-bg-surface-hover'
+            }`}
+            title="Select mode - drag to select multiple"
+            aria-label="Select mode"
+          >
+            {/* Selection box icon */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 010 2H5a1 1 0 01-1-1zM4 13a1 1 0 011-1h4a1 1 0 010 2H5a1 1 0 01-1-1zM15 4a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zM15 12a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zM9 8h6v8H9V8z" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Delete button - enabled when node or edge selected (Task 6) */}
+        <button 
+          onClick={handleDelete} 
+          disabled={!hasSelection} 
+          className="p-1.5 text-text-secondary hover:bg-bg-surface-hover hover:text-status-error rounded disabled:opacity-40 transition-colors" 
+          title="Delete selected (Delete)"
+          aria-label="Delete selected"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+        
         <div className="w-px h-5 bg-border-default mx-0.5 sm:mx-1 hidden sm:block" />
         
         <div className="relative">
@@ -381,11 +464,11 @@ export const EditorToolbar: FC = () => {
         
         <button 
           onClick={handleExecute} 
-          disabled={isExecuting || nodes.length === 0} 
+          disabled={isExecuting || cooldownActive || nodes.length === 0} 
           className={`text-sm bg-status-success text-text-inverse rounded hover:brightness-110 disabled:opacity-50 flex items-center gap-1 sm:gap-2 ${
             isMobile ? 'p-1.5' : 'px-3 py-1.5'
           }`}
-          title="Run pipe"
+          title={cooldownActive ? "Please wait..." : "Run pipe"}
           aria-label="Run"
         >
           {isExecuting ? (

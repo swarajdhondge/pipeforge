@@ -3,20 +3,23 @@ import { useSelector, useDispatch } from 'react-redux';
 import ReactFlow, {
   Background,
   Controls,
+  MiniMap,
   BackgroundVariant,
   useNodesState,
   useEdgesState,
   addEdge,
   useOnViewportChange,
   useReactFlow,
+  SelectionMode,
   type Node,
   type Edge,
   type Connection,
   type Viewport,
+  type OnSelectionChangeParams,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import type { RootState } from '../../../store/store';
-import { setNodes, setEdges, setSelectedNode, setSelectedEdges, saveToHistory, removeEdge, removeNode, removeSelectedEdges, clearEdgeSelection, clearExecutionResult } from '../../../store/slices/canvas-slice';
+import { setNodes, setEdges, setSelectedNode, setSelectedNodes, setSelectedEdges, saveToHistory, removeEdge, removeNode, removeNodes, removeSelectedEdges, clearEdgeSelection, clearNodeSelection, toggleNodeSelection, addEdgeToSelection, clearExecutionResult } from '../../../store/slices/canvas-slice';
 import { propagateSchemas, clearUpstreamSchema } from '../../../store/slices/schema-slice';
 import { useKeyboardShortcuts } from '../../../hooks/use-keyboard-shortcuts';
 import { useBreakpoint } from '../../../hooks/use-media-query';
@@ -74,33 +77,23 @@ export const EditorCanvas: FC = () => {
   const { addToast } = useToast();
   const { fitView } = useReactFlow();
   const { isMobile } = useBreakpoint();
-  const { nodes: storeNodes, edges: storeEdges, selectedNode, selectedEdges, executionResult, isExecuting } = useSelector(
+  const { nodes: storeNodes, edges: storeEdges, selectedNode, selectedNodes, selectedEdges, executionResult, isExecuting, interactionMode, pipeLoadedAt } = useSelector(
     (state: RootState) => state.canvas
   );
-  
-  // Track if we've done initial fitView
-  const hasFitViewRef = useRef(false);
-  const prevNodeCountRef = useRef(storeNodes.length);
   
   // Use ReactFlow's state management for local updates
   const [nodes, setNodesLocal, onNodesChange] = useNodesState(storeNodes);
   const [edges, setEdgesLocal, onEdgesChange] = useEdgesState(storeEdges);
   
-  // Fit view when pipe is loaded (nodes change significantly)
+  // Fit view when a new pipe is loaded (pipeLoadedAt timestamp changes)
   useEffect(() => {
-    const nodeCountChanged = Math.abs(storeNodes.length - prevNodeCountRef.current) > 1;
-    const isInitialLoad = !hasFitViewRef.current && storeNodes.length > 0;
-    
-    if (isInitialLoad || nodeCountChanged) {
+    if (storeNodes.length > 0) {
       // Small delay to ensure nodes are rendered
       setTimeout(() => {
         fitView({ padding: 0.2, duration: 300 });
-      }, 100);
-      hasFitViewRef.current = true;
+      }, 150);
     }
-    
-    prevNodeCountRef.current = storeNodes.length;
-  }, [storeNodes.length, fitView]);
+  }, [pipeLoadedAt, fitView]);
   
   // State for edge context menu position
   const [contextMenu, setContextMenu] = useState<{
@@ -135,36 +128,42 @@ export const EditorCanvas: FC = () => {
     dispatch(propagateSchemas({ edges: remainingEdges }));
   }, [selectedEdges, edges, dispatch]);
 
+  // Handler to delete all selected items (nodes and edges)
+  const handleDeleteAllSelected = useCallback(() => {
+    const hasNodes = selectedNodes.length > 0;
+    const hasEdges = selectedEdges.length > 0;
+    
+    if (!hasNodes && !hasEdges) return;
+    
+    dispatch(saveToHistory());
+    
+    // Delete all selected nodes
+    if (hasNodes) {
+      dispatch(removeNodes(selectedNodes));
+    }
+    
+    // Delete all selected edges
+    if (hasEdges) {
+      handleDeleteSelectedEdges();
+    }
+  }, [selectedNodes, selectedEdges, dispatch, handleDeleteSelectedEdges]);
+
   // Register keyboard shortcuts for deletion
   useKeyboardShortcuts([
     {
       key: 'Delete',
-      handler: () => {
-        if (selectedNode) {
-          dispatch(saveToHistory());
-          dispatch(removeNode(selectedNode));
-        } else if (selectedEdges.length > 0) {
-          handleDeleteSelectedEdges();
-        }
-      },
-      description: 'Delete selected node or edges',
+      handler: handleDeleteAllSelected,
+      description: 'Delete selected nodes and edges',
     },
     {
       key: 'Backspace',
-      handler: () => {
-        if (selectedNode) {
-          dispatch(saveToHistory());
-          dispatch(removeNode(selectedNode));
-        } else if (selectedEdges.length > 0) {
-          handleDeleteSelectedEdges();
-        }
-      },
-      description: 'Delete selected node or edges',
+      handler: handleDeleteAllSelected,
+      description: 'Delete selected nodes and edges',
     },
     {
       key: 'Escape',
       handler: () => {
-        dispatch(setSelectedNode(null));
+        dispatch(clearNodeSelection());
         dispatch(clearEdgeSelection());
         setContextMenu(null);
       },
@@ -181,26 +180,55 @@ export const EditorCanvas: FC = () => {
     setEdgesLocal(storeEdges);
   }, [storeEdges, setEdgesLocal]);
   
-  // Handle node selection
+  // Handle node selection (supports Ctrl+click for multi-select)
   const onNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      dispatch(setSelectedNode(node.id));
+    (event: React.MouseEvent, node: Node) => {
+      if (event.ctrlKey || event.metaKey) {
+        // Ctrl+click: toggle node in selection
+        dispatch(toggleNodeSelection(node.id));
+      } else {
+        // Regular click: select only this node, clear edges
+        dispatch(setSelectedNode(node.id));
+        dispatch(clearEdgeSelection());
+      }
     },
     [dispatch]
   );
   
   // Handle pane click (deselect)
   const onPaneClick = useCallback(() => {
-    dispatch(setSelectedNode(null));
-    dispatch(setSelectedEdges([]));
+    dispatch(clearNodeSelection());
+    dispatch(clearEdgeSelection());
     setContextMenu(null);
   }, [dispatch]);
   
-  // Handle edge click for selection
+  // Handle edge click for selection (supports Ctrl+click for multi-select)
   const onEdgeClick = useCallback(
-    (_event: React.MouseEvent, edge: Edge) => {
-      dispatch(setSelectedEdges([edge.id]));
-      dispatch(setSelectedNode(null)); // Deselect nodes when edge is selected
+    (event: React.MouseEvent, edge: Edge) => {
+      if (event.ctrlKey || event.metaKey) {
+        // Ctrl+click: toggle edge in selection
+        if (selectedEdges.includes(edge.id)) {
+          dispatch(setSelectedEdges(selectedEdges.filter(id => id !== edge.id)));
+        } else {
+          dispatch(addEdgeToSelection(edge.id));
+        }
+      } else {
+        // Regular click: select only this edge, clear nodes
+        dispatch(setSelectedEdges([edge.id]));
+        dispatch(clearNodeSelection());
+      }
+    },
+    [dispatch, selectedEdges]
+  );
+  
+  // Handle selection change from box selection (Task 8)
+  const onSelectionChange = useCallback(
+    ({ nodes: selectedNodesList, edges: selectedEdgesList }: OnSelectionChangeParams) => {
+      // Update Redux with the box-selected items
+      if (selectedNodesList.length > 0 || selectedEdgesList.length > 0) {
+        dispatch(setSelectedNodes(selectedNodesList.map(n => n.id)));
+        dispatch(setSelectedEdges(selectedEdgesList.map(e => e.id)));
+      }
     },
     [dispatch]
   );
@@ -306,9 +334,9 @@ export const EditorCanvas: FC = () => {
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Canvas with ReactFlow */}
       <div className="flex-1 relative bg-bg-canvas">
-        {/* Canvas tracker - bottom right corner */}
-        <div className="absolute bottom-4 right-4 bg-bg-surface border border-border-default rounded-lg shadow-sm px-3 py-2 text-xs text-text-secondary z-10">
-          Zoom: {Math.round(viewport.zoom * 100)}% • Pan: {Math.round(viewport.x)}, {Math.round(viewport.y)}
+        {/* Zoom percentage - styled like controls, positioned adjacent */}
+        <div className="absolute bottom-4 right-[70px] bg-bg-surface border border-border-default rounded text-xs text-text-secondary z-10 px-2 py-1.5">
+          Zoom: {Math.round(viewport.zoom * 100)}%
         </div>
         
         {/* Empty state when no nodes */}
@@ -353,6 +381,10 @@ export const EditorCanvas: FC = () => {
           className="w-full h-full"
           minZoom={0.1}
           maxZoom={2}
+          selectionOnDrag={interactionMode === 'select'}
+          panOnDrag={interactionMode === 'pan'}
+          selectionMode={SelectionMode.Partial}
+          onSelectionChange={onSelectionChange}
         >
           {/* Global SVG defs for edge markers - ensures arrows render correctly */}
           <svg style={{ position: 'absolute', width: 0, height: 0 }}>
@@ -383,6 +415,21 @@ export const EditorCanvas: FC = () => {
             showFitView={true}
             showInteractive={false}
           />
+          
+          {/* Mini-map navigator - top right, click to navigate, hidden on mobile */}
+          {!isMobile && (
+            <MiniMap
+              position="top-right"
+              nodeStrokeWidth={1}
+              nodeColor="#7C3AED"
+              nodeBorderRadius={2}
+              zoomable={false}
+              pannable
+              className="!bg-bg-surface/95 !border !border-border-default !rounded !shadow-sm hidden md:block"
+              style={{ width: 120, height: 75 }}
+              maskColor="rgba(124, 58, 237, 0.1)"
+            />
+          )}
         </ReactFlow>
         
         {/* Edge Context Menu */}

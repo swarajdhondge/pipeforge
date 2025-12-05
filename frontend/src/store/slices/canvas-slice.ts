@@ -34,7 +34,10 @@ interface ExecutionResult {
 interface CanvasState {
   nodes: OperatorNode[];
   edges: Edge[];
+  /** @deprecated Use selectedNodes instead. Kept for backward compatibility. */
   selectedNode: string | null;
+  /** Array of selected node IDs (supports multi-select with Ctrl+click) */
+  selectedNodes: string[];
   selectedEdges: string[];
   expandedNodeId: string | null;
   viewport: { x: number; y: number; zoom: number };
@@ -47,6 +50,10 @@ interface CanvasState {
   isExecuting: boolean;
   /** Node ID to run selected execution from (null if not triggered) */
   runSelectedNodeId: string | null;
+  /** Canvas interaction mode: pan (drag to move) or select (drag to box-select) */
+  interactionMode: 'pan' | 'select';
+  /** Timestamp when a pipe was loaded - used to trigger fitView */
+  pipeLoadedAt: number;
 }
 
 // Default nodes for new pipes - Simple working pipeline: Fetch → Truncate → Output
@@ -104,6 +111,7 @@ const initialState: CanvasState = {
   nodes: DEFAULT_NODES,
   edges: DEFAULT_EDGES,
   selectedNode: null,
+  selectedNodes: [],
   selectedEdges: [],
   expandedNodeId: null,
   viewport: { x: 0, y: 0, zoom: 1 },
@@ -115,6 +123,8 @@ const initialState: CanvasState = {
   executionResult: null,
   isExecuting: false,
   runSelectedNodeId: null,
+  interactionMode: 'pan',
+  pipeLoadedAt: Date.now(),
 };
 
 const canvasSlice = createSlice({
@@ -144,6 +154,20 @@ const canvasSlice = createSlice({
       if (state.selectedNode === action.payload) {
         state.selectedNode = null;
       }
+      state.selectedNodes = state.selectedNodes.filter((id) => id !== action.payload);
+      state.isDirty = true;
+    },
+    /** Remove multiple nodes at once (for multi-select delete) */
+    removeNodes: (state, action: PayloadAction<string[]>) => {
+      const nodeIds = new Set(action.payload);
+      state.nodes = state.nodes.filter((n) => !nodeIds.has(n.id));
+      state.edges = state.edges.filter(
+        (e) => !nodeIds.has(e.source) && !nodeIds.has(e.target)
+      );
+      if (state.selectedNode && nodeIds.has(state.selectedNode)) {
+        state.selectedNode = null;
+      }
+      state.selectedNodes = [];
       state.isDirty = true;
     },
     setEdges: (state, action: PayloadAction<Edge[]>) => {
@@ -182,6 +206,50 @@ const canvasSlice = createSlice({
     },
     setSelectedNode: (state, action: PayloadAction<string | null>) => {
       state.selectedNode = action.payload;
+      // Keep selectedNodes in sync (single selection mode)
+      state.selectedNodes = action.payload ? [action.payload] : [];
+    },
+    /** Set multiple selected nodes (for multi-select) */
+    setSelectedNodes: (state, action: PayloadAction<string[]>) => {
+      state.selectedNodes = action.payload;
+      // Keep selectedNode in sync (first selected node or null)
+      state.selectedNode = action.payload.length > 0 ? action.payload[0] : null;
+    },
+    /** Add a node to selection (Ctrl+click) */
+    addNodeToSelection: (state, action: PayloadAction<string>) => {
+      if (!state.selectedNodes.includes(action.payload)) {
+        state.selectedNodes.push(action.payload);
+      }
+      // Update selectedNode to the newly added node
+      state.selectedNode = action.payload;
+    },
+    /** Remove a node from selection (Ctrl+click on selected node) */
+    removeNodeFromSelection: (state, action: PayloadAction<string>) => {
+      state.selectedNodes = state.selectedNodes.filter((id) => id !== action.payload);
+      // Update selectedNode
+      if (state.selectedNode === action.payload) {
+        state.selectedNode = state.selectedNodes.length > 0 ? state.selectedNodes[0] : null;
+      }
+    },
+    /** Toggle node selection (Ctrl+click) */
+    toggleNodeSelection: (state, action: PayloadAction<string>) => {
+      const nodeId = action.payload;
+      if (state.selectedNodes.includes(nodeId)) {
+        // Remove from selection
+        state.selectedNodes = state.selectedNodes.filter((id) => id !== nodeId);
+        if (state.selectedNode === nodeId) {
+          state.selectedNode = state.selectedNodes.length > 0 ? state.selectedNodes[0] : null;
+        }
+      } else {
+        // Add to selection
+        state.selectedNodes.push(nodeId);
+        state.selectedNode = nodeId;
+      }
+    },
+    /** Clear all node selections */
+    clearNodeSelection: (state) => {
+      state.selectedNode = null;
+      state.selectedNodes = [];
     },
     setExpandedNode: (state, action: PayloadAction<string | null>) => {
       state.expandedNodeId = action.payload;
@@ -195,7 +263,9 @@ const canvasSlice = createSlice({
       state.viewport = action.payload.viewport || { x: 0, y: 0, zoom: 1 };
       state.isDirty = false;
       state.selectedNode = null;
+      state.selectedNodes = [];
       state.expandedNodeId = null;
+      state.pipeLoadedAt = Date.now(); // Trigger fitView in EditorCanvas
     },
     markClean: (state) => {
       state.isDirty = false;
@@ -247,11 +317,13 @@ const canvasSlice = createSlice({
       state.nodes = DEFAULT_NODES;
       state.edges = DEFAULT_EDGES;
       state.selectedNode = null;
+      state.selectedNodes = [];
       state.expandedNodeId = null;
       state.isDirty = false;
       state.history = { past: [], future: [] };
       state.executionResult = null;
       state.isExecuting = false;
+      state.pipeLoadedAt = Date.now(); // Trigger fitView in EditorCanvas
     },
     setExecutionResult: (state, action: PayloadAction<ExecutionResult | null>) => {
       state.executionResult = action.payload;
@@ -270,6 +342,10 @@ const canvasSlice = createSlice({
     clearRunSelectedTrigger: (state) => {
       state.runSelectedNodeId = null;
     },
+    /** Set canvas interaction mode (pan or select) */
+    setInteractionMode: (state, action: PayloadAction<'pan' | 'select'>) => {
+      state.interactionMode = action.payload;
+    },
   },
 });
 
@@ -278,10 +354,16 @@ export const {
   addNode,
   updateNode,
   removeNode,
+  removeNodes,
   setEdges,
   addEdge,
   removeEdge,
   setSelectedNode,
+  setSelectedNodes,
+  addNodeToSelection,
+  removeNodeFromSelection,
+  toggleNodeSelection,
+  clearNodeSelection,
   setExpandedNode,
   setSelectedEdges,
   addEdgeToSelection,
@@ -300,6 +382,7 @@ export const {
   clearExecutionResult,
   triggerRunSelected,
   clearRunSelectedTrigger,
+  setInteractionMode,
 } = canvasSlice.actions;
 
 export default canvasSlice.reducer;

@@ -62,7 +62,7 @@ const TemplateCard: FC<{ pipe: Pipe }> = ({ pipe }) => {
     <Card 
       variant="interactive" 
       className="flex flex-col h-full cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
-      onClick={() => navigate(`/explore/${pipe.id}`)}
+      onClick={() => navigate(`/explore/${pipe.id}`, { state: { from: 'templates' } })}
     >
       <div className="p-4 sm:p-5 flex-1">
         <div className="flex items-start justify-between mb-2">
@@ -96,7 +96,7 @@ const TemplateCard: FC<{ pipe: Pipe }> = ({ pipe }) => {
           className="flex-1"
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/explore/${pipe.id}`);
+            navigate(`/explore/${pipe.id}`, { state: { from: 'templates' } });
           }}
         >
           View
