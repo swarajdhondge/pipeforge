@@ -79,7 +79,7 @@ export const EmailVerificationBannerSpacer: FC = () => {
 };
 
 export const EmailVerificationBanner: FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const { addToast } = useToast();
   const { isBannerVisible, dismissBanner } = useEmailVerificationBanner();
   const [isResending, setIsResending] = useState(false);

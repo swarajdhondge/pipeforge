@@ -10,11 +10,10 @@ import { Input } from '../components/common/Input';
 import { Avatar } from '../components/common/Avatar';
 import { Modal } from '../components/common/Modal';
 import { useToast } from '../components/common/Toast';
-import { storageService } from '../services/storage-service';
 import { EmailVerificationBannerSpacer } from '../components/common/EmailVerificationBanner';
 
 export const SettingsPage: FC = () => {
-  const { isAuthenticated, user, getProfile, logout, forceLogout } = useAuth();
+  const { isAuthenticated, user, getProfile, forceLogout } = useAuth();
   const navigate = useNavigate();
   const { addToast } = useToast();
   

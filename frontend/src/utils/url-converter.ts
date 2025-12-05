@@ -35,7 +35,7 @@ const URL_PATTERNS: UrlPattern[] = [
   {
     source: 'Reddit',
     pattern: /^https?:\/\/(www\.|old\.)?reddit\.com\/(r\/[^\/\?#]+)/i,
-    convert: (m, url) => {
+    convert: (_m, url) => {
       // Remove trailing slash and add .json
       const cleanUrl = url.replace(/\/?(\?.*)?$/, '');
       return cleanUrl.endsWith('.json') ? cleanUrl : `${cleanUrl}.json`;
