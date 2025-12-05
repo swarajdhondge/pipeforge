@@ -5,8 +5,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including dev for build)
-RUN npm install
+# Use npm mirror to avoid registry issues
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install && \
+    npm config set registry https://registry.npmjs.org
 
 # Copy source code
 COPY . .
